@@ -127,20 +127,20 @@ def getPathToGoal(state):
 
 def writeOutput(state, count, max_search_depth, time):
     ### Student Code Goes here
+    f = open("output.txt", "w+")
+
     path = getPathToGoal(state)
-    print "path_to_goal:", path
-    print "cost_of_path:", len(path)
-    print "nodes_expanded:", count
-    print "search_depth:", state.cost
-    print "max_search_depth:", max_search_depth
-    print "running_time:", time
-    print "max_ram_usage", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    f.write( "path_to_goal: %s\n" % str(path) )
+    f.write( "cost_of_path: %d\n" % len(path) )
+    f.write( "nodes_expanded: %d\n" % count )
+    f.write( "search_depth: %d\n" % state.cost )
+    f.write( "max_search_depth: %d\n" % max_search_depth )
+    f.write( "running_time: %.5f\n" % time )
+    f.write( "max_ram_usage: %.5f\n" % ( float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / float(1024.0) ) )
+    f.close()
 
 def bfs_search(initial_state):
     """BFS search"""
-    ### STUDENT CODE GOES HERE ###
-    initial_state.display()
-
     d = deque()
     d.append( initial_state )
     memory = set([])
@@ -164,9 +164,6 @@ def bfs_search(initial_state):
 
 def dfs_search(initial_state):
     """DFS search"""
-    ### STUDENT CODE GOES HERE ###
-    initial_state.display()
-
     d = deque()
     d.append(initial_state)
     memory = set([])
@@ -177,13 +174,15 @@ def dfs_search(initial_state):
     while len(d):
         state = d.pop()
 
+        if state.cost > max_search_depth: max_search_depth = state.cost
+
         if test_goal(state):
             return state, nodes_count, max_search_depth
 
         children = state.expand()
 
         nodes_count += 1
-        if children[0].cost > max_search_depth: max_search_depth = children[0].cost
+        #if children[0].cost > max_search_depth: max_search_depth = children[0].cost
         for i in xrange(len(children)-1, -1, -1):
             if ''.join(map(str, children[i].config)) not in memory:
                 d.append(children[i])
@@ -192,24 +191,22 @@ def dfs_search(initial_state):
 
 def A_star_search(initial_state):
     """A * search"""
-    ### STUDENT CODE GOES HERE ###
-    initial_state.display()
-
     h = []
-    hq.heappush(h, (calculate_total_cost(initial_state), initial_state))
+    hq.heappush(h, (calculate_total_cost(initial_state), initial_state.cost, initial_state))
     memory = set([])
     memory.add(''.join(map(str, initial_state.config)))
     nodes_count = 0
     max_search_depth = 0
 
     while len(h):
-        cost, state = hq.heappop(h)
+        cost, action, state = hq.heappop(h)
 
         if test_goal(state):
             return state, nodes_count, max_search_depth
 
         nodes_count += 1
         children = state.expand()
+
         if children[0].cost > max_search_depth: max_search_depth = children[0].cost
         for i in children:
             if not ''.join(map(str, i.config)) in memory:
@@ -218,21 +215,21 @@ def A_star_search(initial_state):
                 elif i.action == "Down": action = 1
                 elif i.action == "Left": action = 2
                 elif i.action == "Right": action = 3
-                hq.heappush(h, (calculate_total_cost(initial_state), i))
+                hq.heappush(h, (calculate_total_cost(i), i.cost, i))
                 memory.add(''.join(map(str, i.config)))
 
 def calculate_total_cost(state):
     """calculate the total estimated cost of a state"""
-    ### STUDENT CODE GOES HERE ###
     total = 0
     for i in xrange(len(state.config)):
-        sum = calculate_manhattan_dist( i, state.config[i], state.n )
-        total += sum
+        if state.config[i] != 0:
+            sum = calculate_manhattan_dist( i, state.config[i], state.n )
+            total += sum
     return total
 
 def calculate_manhattan_dist(idx, value, n):
     """calculatet the manhattan distance of a tile"""
-    ### STUDENT CODE GOES HERE ###
+
     i_pos = idx / n
     j_pos = idx % n
     i_val = value / n
@@ -247,7 +244,6 @@ def test_goal(puzzle_state):
 
 
 # Main Function that reads in Input and Runs corresponding Algorithm
-
 def main():
     sm = sys.argv[1].lower()
     begin_state = sys.argv[2].split(",")
